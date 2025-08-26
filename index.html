@@ -3,256 +3,249 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Frases Flutuantes</title>
+  <title>Mymind</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg-1:#0f1226; /* fundo profundo */
-      --bg-2:#1a1f3d; /* tom secundário */
-      --acc-1:#8fd3fe; /* azul suave */
-      --acc-2:#c3f7c6; /* verde suave */
-      --paper:#fffdfa; /* cor de folha */
-      --ink:#1c2330; /* cor do texto */
+      --bg-1:#0f1226;
+      --bg-2:#1a1f3d;
+      --acc-1:#8fd3fe;
+      --acc-2:#c3f7c6;
+      --paper:#fffdfa;
+      --ink:#1c2330;
       --shadow: 0 6px 22px rgba(10,14,35,.28), 0 2px 10px rgba(10,14,35,.18);
     }
-
     *{ box-sizing:border-box }
-    html,body{ height:100%; }
+    html,body{ height:100%; margin:0 }
     body{
-      margin:0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       color:#e9ecf1;
       background: radial-gradient(1200px 700px at 15% 10%, rgba(143,211,254,.13), transparent 60%),
                   radial-gradient(1000px 700px at 85% 90%, rgba(195,247,198,.12), transparent 60%),
                   linear-gradient(135deg, var(--bg-1), var(--bg-2));
-      overflow:hidden; /* as folhas flutuam dentro da viewport */
+      overflow:hidden;
     }
-
-    /* Cabeçalho discreto */
     .topbar{
-      position:fixed; inset: 18px auto auto 18px; z-index: 2000;
+      position:fixed; inset:18px auto auto 18px; z-index:2000;
       display:flex; gap:12px; align-items:center;
       backdrop-filter: blur(8px);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 16px; padding: 12px 14px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:16px; padding:12px 14px;
+      box-shadow:0 4px 14px rgba(0,0,0,.18);
     }
-    .brand{font-weight:800; letter-spacing:.3px; font-size:14px; opacity:.9}
+    .brand{font-weight:800; letter-spacing:.3px; font-size:14px; opacity:.95}
     .brand b{color:var(--acc-1)}
-
-    /* Formulário de entrada */
-    .composer{ display:flex; align-items:center; gap:10px; }
+    .brand .my{color:#ffffff}
+    .brand .mind{color:var(--acc-1)}
+    .composer{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
     .composer input[type="text"]{
       width: clamp(220px, 30vw, 440px);
-      padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+      padding: 12px 14px; border-radius: 12px; border:1px solid rgba(255,255,255,.14);
       background: rgba(255,255,255,.06); color:#eef1f7; outline:none;
     }
-    .composer input::placeholder{ color: #c9cfda; opacity:.66 }
-    .btn{
-      appearance: none; border:0; cursor:pointer; border-radius: 12px;
-      padding: 11px 14px; font-weight:700; color:#0a0f1e;
-      background: linear-gradient(180deg, #c3f7c6, #8fd3fe);
-      box-shadow: 0 6px 16px rgba(143,211,254,.28);
-      transition: transform .12s ease, filter .2s ease;
+    .composer input::placeholder{ color:#c9cfda; opacity:.66 }
+    .btn{ appearance:none; border:0; cursor:pointer; border-radius:12px; padding:11px 14px;
+      font-weight:700; color:#0a0f1e;
+      background: linear-gradient(180deg,#c3f7c6,#8fd3fe);
+      box-shadow:0 6px 16px rgba(143,211,254,.28);
     }
-    .btn:hover{ transform: translateY(-1px) }
-    .btn:active{ transform: translateY(0) scale(.98) }
-    .ghost{
-      background: transparent; color:#dce3ee; border:1px solid rgba(255,255,255,.18);
-      box-shadow:none; font-weight:600;
-    }
+    .btn.ghost{ background:transparent; color:#dce3ee; border:1px solid rgba(255,255,255,.18); box-shadow:none; font-weight:600 }
 
-    /* Área de notas */
-    .stage{ position:relative; width:100%; height:100%; overflow:hidden; }
+    .stage{ position:relative; width:100%; height:100%; overflow:hidden }
 
-    /* Folha de papel */
     .note{
-      position:absolute; min-width: 180px; max-width: 340px; padding: 18px 18px 22px 18px;
-      background: var(--paper);
-      color: var(--ink);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      transform-origin: 50% 50%;
-      user-select: none;
-      will-change: transform;
-      animation: float var(--dur, 10s) ease-in-out var(--delay, 0s) infinite alternate;
-      /* leve textura por gradientes */
-      background-image:
-        radial-gradient(1200px 60px at 50% 0, rgba(255,255,255,.8), rgba(255,255,255,0) 70%),
-        linear-gradient(180deg, rgba(0,0,0,.03), rgba(255,255,255,0) 30%);
-      border: 1px solid rgba(0,0,0,.04);
+      position:absolute; min-width:180px; max-width:clamp(280px,28vw,360px); padding:18px 18px 28px;
+      background: var(--paper); color: var(--ink);
+      border-radius:18px; box-shadow:var(--shadow);
+      transform-origin:50% 50%; user-select:none; will-change:transform,left,top;
+      animation: float var(--dur,10s) ease-in-out var(--delay,0s) infinite alternate;
+      cursor:grab;
     }
-
-    .note::before{ /* pino */
-      content: ""; position:absolute; top:12px; left:14px; width:10px; height:10px;
+    .note.dragging{ cursor:grabbing; animation-play-state:paused; z-index:3000; }
+    .pin{ position:absolute; top:10px; left:12px; width:12px; height:12px; border-radius:50%; border:0; padding:0; cursor:pointer;
       background: radial-gradient(circle at 30% 30%, #ff7b7b 0 50%, #c84646 60% 100%);
-      border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
     }
-    .note::after{ /* dobra no canto */
-      content:""; position:absolute; right:0; top:0; width:24px; height:24px;
-      background: linear-gradient(135deg, rgba(0,0,0,.12), rgba(0,0,0,0) 60%);
-      clip-path: polygon(0 0, 100% 0, 100% 100%);
-      border-top-right-radius: 18px;
-      opacity:.18;
-    }
+    .note.pinned{ animation-play-state: paused !important; z-index: 2500; }
+    .note.pinned .pin{ transform: scale(1.1); }
+    .note.pinned{animation-play-state:paused !important; z-index:2500;}
+    .note p{margin:8px 0 0; line-height:1.45; font-weight:500; font-size:clamp(14px,2.2vw,16px); white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:60vh; overflow:auto}
 
-    .note p{ margin: 8px 0 0 0; line-height:1.45; font-weight:500; font-size: clamp(14px, 2.2vw, 16px); }
-    .note h4{ margin:0; font-family: "Playfair Display", serif; font-weight:700; font-size: clamp(16px, 2.3vw, 18px); }
+    /* Toolbar dentro da folha */
+    .note-toolbar{ position:absolute; top:6px; right:6px; display:flex; align-items:center; }
+    .gear{ appearance:none; border:0; background:transparent; padding:0; margin:0; font-size:16px; cursor:pointer; line-height:1 }
+    .menu{ position:absolute; right:0; bottom:38px; display:none; flex-direction:column; gap:6px; padding:8px; background:#ffffff; border:1px solid rgba(0,0,0,.1); border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.18) }
+    .menu.open{ display:flex }
+    .menu .item{ appearance:none; border:1px solid rgba(0,0,0,.08); background:#f5f6f8; padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; color:#1f2937 }
 
-    /* ao focar/pausar */
-    .note:hover{ filter: drop-shadow(0 18px 28px rgba(10,14,35,.42)); }
-    .note.paused{ animation-play-state: paused; z-index: 1500; transform: scale(1.04) translateZ(0); }
+    @keyframes float{0%{transform:translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,-2deg));}50%{transform:translate(var(--x1,10px),var(--y1,-10px)) rotate(var(--r1,2deg));}100%{transform:translate(var(--x2,-6px),var(--y2,8px)) rotate(var(--r2,0deg));}}
 
-    @keyframes float{
-      0%   { transform: translate(var(--x0, 0), var(--y0, 0)) rotate(var(--r0, -2deg)); }
-      50%  { transform: translate(var(--x1, 10px), var(--y1, -10px)) rotate(var(--r1, 2deg)); }
-      100% { transform: translate(var(--x2, -6px), var(--y2, 8px)) rotate(var(--r2, 0deg)); }
-    }
-
-    /* Tooltip minimalista */
-    .tip{
-      position:fixed; bottom:18px; right:18px; z-index: 2000;
-      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
-      border-radius: 14px; padding:10px 12px; font-size:12px; opacity:.85;
-      backdrop-filter: blur(6px);
-    }
-
-    /* Responsivo */
     @media (max-width: 640px){
-      .composer input[type="text"]{ width: 58vw }
-      .topbar{ inset: 12px auto auto 12px; padding:10px 12px }
-      .tip{ bottom:12px; right:12px }
+      .composer input[type="text"]{ width:58vw }
     }
   </style>
 </head>
 <body>
-  <div class="topbar" role="region" aria-label="Adicionar frases">
-    <div class="brand">frases<b>.folhas</b></div>
+  <div class="topbar">
+    <div class="brand"><span class="my">My</span><span class="mind">mind</span></div>
     <form class="composer" id="composer" autocomplete="off">
-      <input id="textInput" type="text" maxlength="220" placeholder="Escreva uma frase curta e pressione Enter…" aria-label="Escreva sua frase" />
-      <button class="btn" type="submit" title="Adicionar">Adicionar</button>
-      <button class="btn ghost" type="button" id="clearBtn" title="Limpar tudo">Limpar</button>
+      <input id="textInput" type="text" maxlength="220" placeholder="Escreva uma frase e Enter…" />
+      <button class="btn" type="submit">Adicionar</button>
+      <button class="btn ghost" type="button" id="clearBtn">Limpar</button>
     </form>
   </div>
-
-  <div class="stage" id="stage" aria-live="polite" aria-atomic="false"></div>
-
-  <div class="tip">Dica: passe o mouse ou toque numa folha para pausar e ler.</div>
-
+  <div class="stage" id="stage"></div>
   <script>
-    const stage = document.getElementById('stage');
-    const form = document.getElementById('composer');
-    const input = document.getElementById('textInput');
-    const clearBtn = document.getElementById('clearBtn');
+  // ====== Mymind — notas flutuantes com fixar, cores e arrastar ======
+  const stage = document.getElementById('stage');
+  const form  = document.getElementById('composer');
+  const input = document.getElementById('textInput');
+  const clearBtn = document.getElementById('clearBtn');
 
-    /** Util: salva e carrega do localStorage */
-    const STORAGE_KEY = 'frases_folhas_v1';
-    const loadNotes = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    const saveNotes = (arr) => localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  const STORAGE_KEY = 'mymind_notes';
+  const rand = (a,b)=>Math.random()*(b-a)+a;
+  const clamp = (v,a,b)=>Math.min(Math.max(v,a),b);
+  const load = ()=>{ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch{ return []; } };
+  const save = (arr)=>localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
 
-    /** Gera números aleatórios com intervalo */
-    const rand = (min, max) => Math.random() * (max - min) + min;
+  function persist(){
+    const arr = [...document.querySelectorAll('.note')].map(n=>({
+      t: n.querySelector('p').textContent,
+      x: parseFloat(n.style.left) || 0,
+      y: parseFloat(n.style.top) || 0,
+      bg: n.style.background || undefined,
+      fg: n.style.color || undefined,
+      pin: n.classList.contains('pinned') || undefined
+    }));
+    save(arr);
+  }
 
-    /** Cria elemento de nota */
-    function createNote(text, idx){
-      const el = document.createElement('article');
-      el.className = 'note';
-      el.setAttribute('role', 'note');
-      el.setAttribute('aria-label', `Folha ${idx+1}`);
-      el.innerHTML = `<h4>✦</h4><p></p>`;
-      el.querySelector('p').textContent = text;
+  function createNote(note){
+    const data = (typeof note==='string') ? { t: note } : note;
+    const el = document.createElement('article');
+    el.className = 'note';
+    el.innerHTML = `
+      <button class="pin" title="Fixar/soltar" aria-label="Fixar/soltar"></button>
+      <p></p>
+      <div class="note-toolbar">
+        <button class="gear" title="Ajustes" aria-haspopup="menu">⚙️</button>
+        <div class="menu" role="menu" aria-label="Ajustes">
+          <button class="item" data-target="bg" role="menuitem">Fundo</button>
+          <button class="item" data-target="fg" role="menuitem">Letra</button>
+        </div>
+        <input type="color" class="picker bgPicker" hidden>
+        <input type="color" class="picker fgPicker" hidden>
+      </div>`;
 
-      // posição inicial aleatória dentro da viewport
-      const vw = window.innerWidth; const vh = window.innerHeight;
-      const x = rand(40, vw - 360); // margem de borda
-      const y = rand(40, vh - 220);
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
+    // texto
+    el.querySelector('p').textContent = data.t || '';
 
-      // parâmetros aleatórios de animação
-      el.style.setProperty('--dur', `${rand(9, 15)}s`);
-      el.style.setProperty('--delay', `${rand(-4, 4)}s`);
-      el.style.setProperty('--x0', `${rand(-6, 6)}px`);
-      el.style.setProperty('--y0', `${rand(-8, 8)}px`);
-      el.style.setProperty('--x1', `${rand(-16, 16)}px`);
-      el.style.setProperty('--y1', `${rand(-14, 14)}px`);
-      el.style.setProperty('--x2', `${rand(-16, 16)}px`);
-      el.style.setProperty('--y2', `${rand(-12, 12)}px`);
-      el.style.setProperty('--r0', `${rand(-3, 3)}deg`);
-      el.style.setProperty('--r1', `${rand(-2, 2)}deg`);
-      el.style.setProperty('--r2', `${rand(-1, 1)}deg`);
+    // posição inicial
+    const initX = (typeof data.x==='number') ? data.x : rand(40, Math.max(44, window.innerWidth  - 360));
+    const initY = (typeof data.y==='number') ? data.y : rand(40, Math.max(44, window.innerHeight - 220));
+    el.style.left = initX + 'px';
+    el.style.top  = initY + 'px';
 
-      // pausar/retomar ao hover ou toque
-      let touchTimeout;
-      const togglePause = (pause=true)=> el.classList.toggle('paused', pause);
-      el.addEventListener('mouseenter', ()=>togglePause(true));
-      el.addEventListener('mouseleave', ()=>togglePause(false));
-      el.addEventListener('touchstart', ()=>{ togglePause(true); clearTimeout(touchTimeout); touchTimeout = setTimeout(()=>togglePause(false), 2000); }, {passive:true});
+    // cores salvas
+    if(data.bg) el.style.background = data.bg;
+    if(data.fg) el.style.color = data.fg;
 
-      // duplo clique para remover apenas essa nota
-      el.addEventListener('dblclick', ()=>{
-        el.remove();
-        const left = Array.from(document.querySelectorAll('.note')).map(n=>n.querySelector('p').textContent);
-        saveNotes(left);
-      });
+    // fixado?
+    if(data.pin) el.classList.add('pinned');
 
-      stage.appendChild(el);
-      return el;
-    }
+    // refs de UI
+    const pinBtn   = el.querySelector('.pin');
+    const gear     = el.querySelector('.gear');
+    const menu     = el.querySelector('.menu');
+    const bgPicker = el.querySelector('.bgPicker');
+    const fgPicker = el.querySelector('.fgPicker');
 
-    /** Render inicial */
-    function render(){
-      stage.innerHTML = '';
-      const notes = loadNotes();
-      notes.forEach((t, i)=>createNote(t, i));
-    }
+    // valores iniciais dos pickers
+    bgPicker.value = data.bg || '#fffdfa';
+    fgPicker.value = data.fg || '#1c2330';
 
-    /** Submissão do formulário */
-    form.addEventListener('submit', (e)=>{
-      e.preventDefault();
-      const text = (input.value || '').trim();
-      if(!text) return;
-      const notes = loadNotes();
-      notes.push(text);
-      saveNotes(notes);
-      createNote(text, notes.length - 1);
-      input.value = '';
-      input.focus();
+    // abrir/fechar menu
+    gear.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
+    document.addEventListener('click', (e)=>{ if(!el.contains(e.target)) menu.classList.remove('open'); });
+
+    // impedir que UI interna inicie arraste
+    ['pointerdown','mousedown','touchstart','click'].forEach(evt=>{
+      pinBtn.addEventListener(evt, ev=>ev.stopPropagation());
+      gear.addEventListener(evt, ev=>ev.stopPropagation());
+      menu.addEventListener(evt, ev=>ev.stopPropagation());
+      bgPicker.addEventListener(evt, ev=>ev.stopPropagation());
+      fgPicker.addEventListener(evt, ev=>ev.stopPropagation());
     });
 
-    /** Limpar tudo */
-    clearBtn.addEventListener('click', ()=>{
-      if(confirm('Tem certeza que deseja limpar todas as folhas?')){
-        localStorage.removeItem(STORAGE_KEY);
-        render();
-      }
+    // ações do menu
+    menu.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.item'); if(!btn) return;
+      if(btn.dataset.target==='bg') bgPicker.click();
+      if(btn.dataset.target==='fg') fgPicker.click();
     });
 
-    /** Ajusta posições ao redimensionar (opcional: re-render para manter bons limites) */
-    window.addEventListener('resize', ()=>{
-      // Reposiciona suavemente
-      const notes = document.querySelectorAll('.note');
-      notes.forEach(n=>{
-        const vw = window.innerWidth; const vh = window.innerHeight;
-        const x = rand(40, Math.max(44, vw - 360));
-        const y = rand(40, Math.max(44, vh - 220));
-        n.style.left = `${x}px`; n.style.top = `${y}px`;
-      });
-    });
+    // aplicar mudanças de cor
+    bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persist(); });
+    fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persist(); });
 
-    // Pré-popula com exemplos se vazio
-    if(loadNotes().length === 0){
-      saveNotes([
-        'A simplicidade é o último grau de sofisticação.',
-        'Respire. O agora já é bonito o suficiente.',
-        'Pequenos passos constroem grandes caminhos.'
-      ]);
+    // fixar/soltar
+    pinBtn.addEventListener('click', ()=>{ el.classList.toggle('pinned'); persist(); });
+
+    // arrastar (desativado quando fixada)
+    let sx=0, sy=0, ox=0, oy=0;
+    function onDown(ev){
+      if(el.classList.contains('pinned')) return; // não arrasta se fixada
+      if(ev.button!==undefined && ev.button!==0) return;
+      el.classList.add('dragging');
+      sx = ev.clientX; sy = ev.clientY; ox = parseFloat(el.style.left)||0; oy = parseFloat(el.style.top)||0;
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup',   onUp, { once:true });
     }
+    function onMove(ev){
+      const dx = ev.clientX - sx; const dy = ev.clientY - sy;
+      const nx = clamp(ox + dx, 0, window.innerWidth  - el.offsetWidth);
+      const ny = clamp(oy + dy, 0, window.innerHeight - el.offsetHeight);
+      el.style.left = nx + 'px';
+      el.style.top  = ny + 'px';
+    }
+    function onUp(){ el.classList.remove('dragging'); window.removeEventListener('pointermove', onMove); persist(); }
+    el.addEventListener('pointerdown', onDown);
 
-    render();
-  </script>
+    // remover com duplo clique
+    el.addEventListener('dblclick', ()=>{ el.remove(); persist(); });
+
+    stage.appendChild(el);
+  }
+
+  function render(){ stage.innerHTML=''; load().forEach(createNote); }
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const t = input.value.trim(); if(!t) return;
+    const arr = load(); arr.push({ t }); save(arr);
+    render(); input.value=''; input.focus();
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    if(confirm('Tem certeza que deseja limpar todas as folhas?')){
+      localStorage.removeItem(STORAGE_KEY); render();
+    }
+  });
+
+  window.addEventListener('resize', ()=>{
+    document.querySelectorAll('.note').forEach(n=>{
+      const nx = Math.min(parseFloat(n.style.left)||0, Math.max(0, window.innerWidth  - n.offsetWidth));
+      const ny = Math.min(parseFloat(n.style.top) ||0, Math.max(0, window.innerHeight - n.offsetHeight));
+      n.style.left = nx + 'px'; n.style.top = ny + 'px';
+    });
+    persist();
+  });
+
+  if(load().length===0) save([{ t:'Bem-vindo ao Mymind' }]);
+  render();
+</script>
 </body>
 </html>
