@@ -63,26 +63,42 @@
       background: var(--paper); color: var(--ink);
       border-radius:18px; box-shadow:var(--shadow);
       user-select:none; will-change:transform,left,top;
-      transform: translateZ(0); /* força GPU */
-      /* animação configurada via CSS vars; inicia pausada e invisível para evitar "travadinha" */
+      transform: translateZ(0);
       animation: float var(--dur,10s) ease-in-out var(--delay,0s) infinite alternate;
       animation-play-state: paused;
-      opacity: 0; transform-origin:50% 50%;
-      transition: opacity .35s ease, transform .35s ease;
+      opacity: 0;
+      transform-origin:50% 50%;
+      transition: opacity .35s ease;
       cursor:grab;
+      /* posição inicial = primeiro frame da animação */
+      transform: translate(var(--x0,0), var(--y0,0)) rotate(var(--r0,0deg));
     }
-    .note.live{
-      animation-play-state: running;
-      opacity: 1;
-    }
+    .note.live{ animation-play-state: running; opacity: 1; }
     .note.dragging{ cursor:grabbing; animation-play-state:paused; z-index:3000; }
+
+    /* PIN:
+       - padrão = "buraco" usando currentColor (JS define preto/branco conforme contraste)
+       - quando .pinned = alfinete vermelho
+    */
     .pin{
-      position:absolute; top:10px; left:12px; width:12px; height:12px; border-radius:50%; border:0; padding:0; cursor:pointer;
+      position:absolute; top:10px; left:12px;
+      width:14px; height:14px; border-radius:50%;
+      border:2px solid currentColor;
+      background: currentColor;
+      cursor:pointer;
+      box-shadow:inset 0 0 0 3px currentColor;
+      color:#000; /* default (JS ajusta) */
+    }
+    .note.pinned .pin{
+      border:none;
       background: radial-gradient(circle at 30% 30%, #ff7b7b 0 50%, #c84646 60% 100%);
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      color:inherit;
     }
-    .note.pinned{ z-index: 2500; } /* fixada mas ainda móvel */
-    .note.pinned .pin{ transform: scale(1.1); }
+
+    .note.pinned{ animation-play-state: paused !important; z-index: 2500; }
+    .note.pinned .pin{ transform: scale(1.05); }
+
     .note p{
       margin:8px 0 0; line-height:1.45; font-weight:500; font-size:clamp(14px,2.2vw,16px);
       white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:60vh; overflow:auto
@@ -121,7 +137,6 @@
   <div class="stage" id="stage"></div>
 
   <script>
-  // ====== Mymind — notas flutuantes ======
   const stage = document.getElementById('stage');
   const form  = document.getElementById('composer');
   const input = document.getElementById('textInput');
@@ -145,15 +160,23 @@
     save(arr);
   }
 
-  // inicia animação suavemente (sem travar)
   function startLive(el, i=0){
-    // rAF duplo garante layout aplicado antes da animação
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      // pequeno "stagger" para várias notas
-      setTimeout(()=>{
-        el.classList.add('live');
-      }, i * 60); // 60ms entre cada
+      setTimeout(()=> el.classList.add('live'), i * 60);
     }));
+  }
+
+  // Define cor do "buraco" (pin não fixado) em contraste com o fundo da nota
+  function setPinColor(el){
+    const bg = window.getComputedStyle(el).backgroundColor; // "rgb(r,g,b)" ou "rgba"
+    const m = bg.match(/\d+/g);
+    if(!m) return;
+    const [r,g,b] = m.map(Number);
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255; // 0 escuro ~ 1 claro
+    const pinBtn = el.querySelector('.pin');
+    if(!el.classList.contains('pinned')){
+      pinBtn.style.color = (luminance > 0.5) ? "#000" : "#fff"; // fundo claro -> buraco preto; fundo escuro -> buraco branco
+    }
   }
 
   function createNote(note){
@@ -161,9 +184,9 @@
     const el = document.createElement('article');
     el.className = 'note';
 
-    // drift suave e aleatório controlado
-    const amp = () => (Math.random() < 0.5 ? -1 : 1) * rand(2, 10);   // 2–10px
-    const rot = () => (Math.random() < 0.5 ? -1 : 1) * rand(0.2, 1.2); // 0.2–1.2deg
+    // drift aleatório controlado
+    const amp = () => (Math.random() < 0.5 ? -1 : 1) * rand(2, 10);
+    const rot = () => (Math.random() < 0.5 ? -1 : 1) * rand(0.2, 1.2);
     el.style.setProperty('--x0', `${amp()}px`);
     el.style.setProperty('--y0', `${amp()}px`);
     el.style.setProperty('--x1', `${amp()}px`);
@@ -173,11 +196,14 @@
     el.style.setProperty('--r0', `${rot()}deg`);
     el.style.setProperty('--r1', `${rot()}deg`);
     el.style.setProperty('--r2', `0deg`);
-    el.style.setProperty('--dur', `${rand(8, 14)}s`);   // 8–14s
-    el.style.setProperty('--delay', `${rand(0, 2)}s`);  // 0–2s
+    el.style.setProperty('--dur', `${rand(8, 14)}s`);
+    el.style.setProperty('--delay', `${rand(0, 2)}s`);
+
+    // posição inicial consistente (evita "pulo")
+    el.style.transform = 'translate(var(--x0), var(--y0)) rotate(var(--r0))';
 
     el.innerHTML = `
-      <button class="pin" title="Fixar/soltar" aria-label="Fixar/soltar"></button>
+      <button class="pin" title="Fixar/soltar" aria-label="Fixar ou soltar"></button>
       <p></p>
       <div class="note-toolbar">
         <button class="gear" title="Ajustes" aria-haspopup="menu">⚙️</button>
@@ -212,26 +238,28 @@
     gear.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
     document.addEventListener('click', (e)=>{ if(!el.contains(e.target)) menu.classList.remove('open'); });
 
-    ['pointerdown','mousedown','touchstart','click'].forEach(evt=>{
-      pinBtn.addEventListener(evt, ev=>ev.stopPropagation());
-      gear.addEventListener(evt, ev=>ev.stopPropagation());
-      menu.addEventListener(evt, ev=>ev.stopPropagation());
-      bgPicker.addEventListener(evt, ev=>ev.stopPropagation());
-      fgPicker.addEventListener(evt, ev=>ev.stopPropagation());
-    });
-
     menu.addEventListener('click', (e)=>{
       const btn = e.target.closest('.item'); if(!btn) return;
       if(btn.dataset.target==='bg') bgPicker.click();
       if(btn.dataset.target==='fg') fgPicker.click();
     });
 
-    bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persist(); });
-    fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persist(); });
+    bgPicker.addEventListener('input', (e)=>{
+      el.style.background = e.target.value;
+      setPinColor(el);
+      persist();
+    });
+    fgPicker.addEventListener('input', (e)=>{ el.style.color = e.target.value; persist(); });
 
-    pinBtn.addEventListener('click', ()=>{ el.classList.toggle('pinned'); persist(); });
+    pinBtn.addEventListener('click', ()=>{
+      el.classList.toggle('pinned'); // pausa/retoma animação + alterna buraco/alfinete
+      if(!el.classList.contains('pinned')){
+        setPinColor(el); // voltou a buraco: recalcula contraste
+      }
+      persist();
+    });
 
-    // Arrastar (permitido mesmo "pinned")
+    // Arrastar (permanece possível mesmo fixada)
     let sx=0, sy=0, ox=0, oy=0;
     function onDown(ev){
       if(ev.button!==undefined && ev.button!==0) return;
@@ -249,13 +277,14 @@
     function onUp(){ el.classList.remove('dragging'); window.removeEventListener('pointermove', onMove); persist(); }
     el.addEventListener('pointerdown', onDown);
 
-    // Remover com duplo clique
     el.addEventListener('dblclick', ()=>{ el.remove(); persist(); });
 
-    return el; // ⚠️ não anexamos aqui; quem chama decide
+    // define contraste inicial do "buraco"
+    setPinColor(el);
+
+    return el;
   }
 
-  // Renderiza tudo com batching e inicia animações em "stagger"
   function render(){
     stage.innerHTML='';
     const notes = load();
@@ -266,27 +295,23 @@
     elements.forEach((el, i)=> startLive(el, i));
   }
 
-  // Abre a barra ao clicar em "Adicionar..."
   addTrigger.addEventListener('click', ()=>{
     form.classList.add('active');
     input.value = '';
     input.focus();
   });
 
-  // Enviar nova frase (anexa só a nova nota, sem recriar todas)
   form.addEventListener('submit', (e)=>{
     e.preventDefault();
     const t = input.value.trim(); if(!t) return;
     const arr = load(); arr.push({ t }); save(arr);
-
     const el = createNote({ t });
     stage.appendChild(el);
-    startLive(el); // anima suave só essa
+    startLive(el);
     input.value='';
-    form.classList.remove('active'); // recolhe a barra
+    form.classList.remove('active');
   });
 
-  // Reajuste ao redimensionar
   window.addEventListener('resize', ()=>{
     document.querySelectorAll('.note').forEach(n=>{
       const nx = Math.min(parseFloat(n.style.left)||0, Math.max(0, window.innerWidth  - n.offsetWidth));
@@ -296,11 +321,11 @@
     persist();
   });
 
-  // Frases iniciais
   if(load().length===0) save([
-    { t:"Bem vindo ao MyMind" },
-    { t:"A vida deve ser compreendida para trás. Mas deve ser vivida para frente" },
-    { t:"Te amo!" }
+    { t:"Bem vindo ao MyMind!" },
+    { t:"“O tempo é um ladrão silencioso, que rouba tudo sem jamais devolver.”", bg:"#000000", fg:"#ffffff" },
+    { t:"“Eu não sabia o que era a fraqueza... até conhecer você.”", bg:"#000000", fg:"#ffffff" },
+    { t:"“O passado nunca desaparece, ele apenas se esconde nos cantos mais escuros da mente.”", bg:"#4B0082", fg:"#FFFF66" }
   ]);
   render();
   </script>
