@@ -22,37 +22,39 @@
     body{
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       color:#e9ecf1;
-      background: radial-gradient(1200px 700px at 15% 10%, rgba(143,211,254,.13), transparent 60%),
-                  radial-gradient(1000px 700px at 85% 90%, rgba(195,247,198,.12), transparent 60%),
-                  linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      background:
+        radial-gradient(1200px 700px at 15% 10%, rgba(143,211,254,.13), transparent 60%),
+        radial-gradient(1000px 700px at 85% 90%, rgba(195,247,198,.12), transparent 60%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
       overflow:hidden;
     }
+
+    /* Topbar transparente */
     .topbar{
       position:fixed; inset:18px auto auto 18px; z-index:2000;
       display:flex; gap:12px; align-items:center;
-      backdrop-filter: blur(8px);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:16px; padding:12px 14px;
-      box-shadow:0 4px 14px rgba(0,0,0,.18);
+      background: transparent; border:none; border-radius:16px; padding:12px 14px; box-shadow:none;
     }
     .brand{font-weight:800; letter-spacing:.3px; font-size:14px; opacity:.95}
-    .brand b{color:var(--acc-1)}
     .brand .my{color:#ffffff}
     .brand .mind{color:var(--acc-1)}
+
+    /* Composer com trigger "Adicionar..." */
     .composer{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+    .add-trigger{
+      padding:12px 14px; border-radius:12px;
+      border:none; background:transparent; color:#dce3ee;
+      cursor:text; user-select:none;
+    }
     .composer input[type="text"]{
-      width: clamp(220px, 30vw, 440px);
-      padding: 12px 14px; border-radius: 12px; border:1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06); color:#eef1f7; outline:none;
+      display:none; width: clamp(220px, 30vw, 440px);
+      padding: 12px 14px; border-radius: 12px;
+      border:1px solid rgba(255,255,255,.22);
+      background: transparent; color:#eef1f7; outline:none;
     }
     .composer input::placeholder{ color:#c9cfda; opacity:.66 }
-    .btn{ appearance:none; border:0; cursor:pointer; border-radius:12px; padding:11px 14px;
-      font-weight:700; color:#0a0f1e;
-      background: linear-gradient(180deg,#c3f7c6,#8fd3fe);
-      box-shadow:0 6px 16px rgba(143,211,254,.28);
-    }
-    .btn.ghost{ background:transparent; color:#dce3ee; border:1px solid rgba(255,255,255,.18); box-shadow:none; font-weight:600 }
+    .composer.active .add-trigger{ display:none }
+    .composer.active input[type="text"]{ display:block }
 
     .stage{ position:relative; width:100%; height:100%; overflow:hidden }
 
@@ -60,28 +62,47 @@
       position:absolute; min-width:180px; max-width:clamp(280px,28vw,360px); padding:18px 18px 28px;
       background: var(--paper); color: var(--ink);
       border-radius:18px; box-shadow:var(--shadow);
-      transform-origin:50% 50%; user-select:none; will-change:transform,left,top;
+      user-select:none; will-change:transform,left,top;
+      transform: translateZ(0); /* força GPU */
+      /* animação configurada via CSS vars; inicia pausada e invisível para evitar "travadinha" */
       animation: float var(--dur,10s) ease-in-out var(--delay,0s) infinite alternate;
+      animation-play-state: paused;
+      opacity: 0; transform-origin:50% 50%;
+      transition: opacity .35s ease, transform .35s ease;
       cursor:grab;
     }
+    .note.live{
+      animation-play-state: running;
+      opacity: 1;
+    }
     .note.dragging{ cursor:grabbing; animation-play-state:paused; z-index:3000; }
-    .pin{ position:absolute; top:10px; left:12px; width:12px; height:12px; border-radius:50%; border:0; padding:0; cursor:pointer;
+    .pin{
+      position:absolute; top:10px; left:12px; width:12px; height:12px; border-radius:50%; border:0; padding:0; cursor:pointer;
       background: radial-gradient(circle at 30% 30%, #ff7b7b 0 50%, #c84646 60% 100%);
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
     }
-    .note.pinned{ animation-play-state: paused !important; z-index: 2500; }
+    .note.pinned{ z-index: 2500; } /* fixada mas ainda móvel */
     .note.pinned .pin{ transform: scale(1.1); }
-    .note.pinned{animation-play-state:paused !important; z-index:2500;}
-    .note p{margin:8px 0 0; line-height:1.45; font-weight:500; font-size:clamp(14px,2.2vw,16px); white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:60vh; overflow:auto}
+    .note p{
+      margin:8px 0 0; line-height:1.45; font-weight:500; font-size:clamp(14px,2.2vw,16px);
+      white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:60vh; overflow:auto
+    }
 
     /* Toolbar dentro da folha */
     .note-toolbar{ position:absolute; top:6px; right:6px; display:flex; align-items:center; }
     .gear{ appearance:none; border:0; background:transparent; padding:0; margin:0; font-size:16px; cursor:pointer; line-height:1 }
-    .menu{ position:absolute; right:0; bottom:38px; display:none; flex-direction:column; gap:6px; padding:8px; background:#ffffff; border:1px solid rgba(0,0,0,.1); border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.18) }
+    .menu{
+      position:absolute; right:0; bottom:38px; display:none; flex-direction:column; gap:6px; padding:8px;
+      background:#ffffff; border:1px solid rgba(0,0,0,.1); border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.18)
+    }
     .menu.open{ display:flex }
     .menu .item{ appearance:none; border:1px solid rgba(0,0,0,.08); background:#f5f6f8; padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; color:#1f2937 }
 
-    @keyframes float{0%{transform:translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,-2deg));}50%{transform:translate(var(--x1,10px),var(--y1,-10px)) rotate(var(--r1,2deg));}100%{transform:translate(var(--x2,-6px),var(--y2,8px)) rotate(var(--r2,0deg));}}
+    @keyframes float{
+      0%{transform:translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,-.8deg));}
+      50%{transform:translate(var(--x1,8px),var(--y1,-8px)) rotate(var(--r1,.8deg));}
+      100%{transform:translate(var(--x2,-6px),var(--y2,6px)) rotate(var(--r2,0deg));}
+    }
 
     @media (max-width: 640px){
       .composer input[type="text"]{ width:58vw }
@@ -92,18 +113,19 @@
   <div class="topbar">
     <div class="brand"><span class="my">My</span><span class="mind">mind</span></div>
     <form class="composer" id="composer" autocomplete="off">
-      <input id="textInput" type="text" maxlength="220" placeholder="Escreva uma frase e Enter…" />
-      <button class="btn" type="submit">Adicionar</button>
-      <button class="btn ghost" type="button" id="clearBtn">Limpar</button>
+      <span id="addTrigger" class="add-trigger">Adicionar...</span>
+      <input id="textInput" type="text" maxlength="220" placeholder="Escreva e tecle Enter…" />
     </form>
   </div>
+
   <div class="stage" id="stage"></div>
+
   <script>
-  // ====== Mymind — notas flutuantes com fixar, cores e arrastar ======
+  // ====== Mymind — notas flutuantes ======
   const stage = document.getElementById('stage');
   const form  = document.getElementById('composer');
   const input = document.getElementById('textInput');
-  const clearBtn = document.getElementById('clearBtn');
+  const addTrigger = document.getElementById('addTrigger');
 
   const STORAGE_KEY = 'mymind_notes';
   const rand = (a,b)=>Math.random()*(b-a)+a;
@@ -123,10 +145,37 @@
     save(arr);
   }
 
+  // inicia animação suavemente (sem travar)
+  function startLive(el, i=0){
+    // rAF duplo garante layout aplicado antes da animação
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      // pequeno "stagger" para várias notas
+      setTimeout(()=>{
+        el.classList.add('live');
+      }, i * 60); // 60ms entre cada
+    }));
+  }
+
   function createNote(note){
     const data = (typeof note==='string') ? { t: note } : note;
     const el = document.createElement('article');
     el.className = 'note';
+
+    // drift suave e aleatório controlado
+    const amp = () => (Math.random() < 0.5 ? -1 : 1) * rand(2, 10);   // 2–10px
+    const rot = () => (Math.random() < 0.5 ? -1 : 1) * rand(0.2, 1.2); // 0.2–1.2deg
+    el.style.setProperty('--x0', `${amp()}px`);
+    el.style.setProperty('--y0', `${amp()}px`);
+    el.style.setProperty('--x1', `${amp()}px`);
+    el.style.setProperty('--y1', `${amp()}px`);
+    el.style.setProperty('--x2', `${amp()}px`);
+    el.style.setProperty('--y2', `${amp()}px`);
+    el.style.setProperty('--r0', `${rot()}deg`);
+    el.style.setProperty('--r1', `${rot()}deg`);
+    el.style.setProperty('--r2', `0deg`);
+    el.style.setProperty('--dur', `${rand(8, 14)}s`);   // 8–14s
+    el.style.setProperty('--delay', `${rand(0, 2)}s`);  // 0–2s
+
     el.innerHTML = `
       <button class="pin" title="Fixar/soltar" aria-label="Fixar/soltar"></button>
       <p></p>
@@ -140,38 +189,29 @@
         <input type="color" class="picker fgPicker" hidden>
       </div>`;
 
-    // texto
     el.querySelector('p').textContent = data.t || '';
 
-    // posição inicial
     const initX = (typeof data.x==='number') ? data.x : rand(40, Math.max(44, window.innerWidth  - 360));
     const initY = (typeof data.y==='number') ? data.y : rand(40, Math.max(44, window.innerHeight - 220));
     el.style.left = initX + 'px';
     el.style.top  = initY + 'px';
 
-    // cores salvas
     if(data.bg) el.style.background = data.bg;
     if(data.fg) el.style.color = data.fg;
-
-    // fixado?
     if(data.pin) el.classList.add('pinned');
 
-    // refs de UI
     const pinBtn   = el.querySelector('.pin');
     const gear     = el.querySelector('.gear');
     const menu     = el.querySelector('.menu');
     const bgPicker = el.querySelector('.bgPicker');
     const fgPicker = el.querySelector('.fgPicker');
 
-    // valores iniciais dos pickers
     bgPicker.value = data.bg || '#fffdfa';
     fgPicker.value = data.fg || '#1c2330';
 
-    // abrir/fechar menu
     gear.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
     document.addEventListener('click', (e)=>{ if(!el.contains(e.target)) menu.classList.remove('open'); });
 
-    // impedir que UI interna inicie arraste
     ['pointerdown','mousedown','touchstart','click'].forEach(evt=>{
       pinBtn.addEventListener(evt, ev=>ev.stopPropagation());
       gear.addEventListener(evt, ev=>ev.stopPropagation());
@@ -180,24 +220,20 @@
       fgPicker.addEventListener(evt, ev=>ev.stopPropagation());
     });
 
-    // ações do menu
     menu.addEventListener('click', (e)=>{
       const btn = e.target.closest('.item'); if(!btn) return;
       if(btn.dataset.target==='bg') bgPicker.click();
       if(btn.dataset.target==='fg') fgPicker.click();
     });
 
-    // aplicar mudanças de cor
     bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persist(); });
     fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persist(); });
 
-    // fixar/soltar
     pinBtn.addEventListener('click', ()=>{ el.classList.toggle('pinned'); persist(); });
 
-    // arrastar (desativado quando fixada)
+    // Arrastar (permitido mesmo "pinned")
     let sx=0, sy=0, ox=0, oy=0;
     function onDown(ev){
-      if(el.classList.contains('pinned')) return; // não arrasta se fixada
       if(ev.button!==undefined && ev.button!==0) return;
       el.classList.add('dragging');
       sx = ev.clientX; sy = ev.clientY; ox = parseFloat(el.style.left)||0; oy = parseFloat(el.style.top)||0;
@@ -208,33 +244,49 @@
       const dx = ev.clientX - sx; const dy = ev.clientY - sy;
       const nx = clamp(ox + dx, 0, window.innerWidth  - el.offsetWidth);
       const ny = clamp(oy + dy, 0, window.innerHeight - el.offsetHeight);
-      el.style.left = nx + 'px';
-      el.style.top  = ny + 'px';
+      el.style.left = nx + 'px'; el.style.top  = ny + 'px';
     }
     function onUp(){ el.classList.remove('dragging'); window.removeEventListener('pointermove', onMove); persist(); }
     el.addEventListener('pointerdown', onDown);
 
-    // remover com duplo clique
+    // Remover com duplo clique
     el.addEventListener('dblclick', ()=>{ el.remove(); persist(); });
 
-    stage.appendChild(el);
+    return el; // ⚠️ não anexamos aqui; quem chama decide
   }
 
-  function render(){ stage.innerHTML=''; load().forEach(createNote); }
+  // Renderiza tudo com batching e inicia animações em "stagger"
+  function render(){
+    stage.innerHTML='';
+    const notes = load();
+    const frag = document.createDocumentFragment();
+    const elements = notes.map(createNote);
+    elements.forEach(el => frag.appendChild(el));
+    stage.appendChild(frag);
+    elements.forEach((el, i)=> startLive(el, i));
+  }
 
+  // Abre a barra ao clicar em "Adicionar..."
+  addTrigger.addEventListener('click', ()=>{
+    form.classList.add('active');
+    input.value = '';
+    input.focus();
+  });
+
+  // Enviar nova frase (anexa só a nova nota, sem recriar todas)
   form.addEventListener('submit', (e)=>{
     e.preventDefault();
     const t = input.value.trim(); if(!t) return;
     const arr = load(); arr.push({ t }); save(arr);
-    render(); input.value=''; input.focus();
+
+    const el = createNote({ t });
+    stage.appendChild(el);
+    startLive(el); // anima suave só essa
+    input.value='';
+    form.classList.remove('active'); // recolhe a barra
   });
 
-  clearBtn.addEventListener('click', ()=>{
-    if(confirm('Tem certeza que deseja limpar todas as folhas?')){
-      localStorage.removeItem(STORAGE_KEY); render();
-    }
-  });
-
+  // Reajuste ao redimensionar
   window.addEventListener('resize', ()=>{
     document.querySelectorAll('.note').forEach(n=>{
       const nx = Math.min(parseFloat(n.style.left)||0, Math.max(0, window.innerWidth  - n.offsetWidth));
@@ -244,8 +296,13 @@
     persist();
   });
 
-  if(load().length===0) save([{ t:'Bem-vindo ao Mymind' }]);
+  // Frases iniciais
+  if(load().length===0) save([
+    { t:"Bem vindo ao MyMind" },
+    { t:"A vida deve ser compreendida para trás. Mas deve ser vivida para frente" },
+    { t:"Te amo!" }
+  ]);
   render();
-</script>
+  </script>
 </body>
 </html>
