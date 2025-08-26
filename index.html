@@ -29,7 +29,6 @@
       overflow:hidden;
     }
 
-    /* Topbar transparente */
     .topbar{
       position:fixed; inset:18px auto auto 18px; z-index:2000;
       display:flex; gap:12px; align-items:center;
@@ -39,7 +38,6 @@
     .brand .my{color:#ffffff}
     .brand .mind{color:var(--acc-1)}
 
-    /* Composer com trigger "Adicionar..." */
     .composer{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
     .add-trigger{
       padding:12px 14px; border-radius:12px;
@@ -70,58 +68,41 @@
       transform-origin:50% 50%;
       transition: opacity .35s ease;
       cursor:grab;
-      /* posição inicial = primeiro frame da animação */
       transform: translate(var(--x0,0), var(--y0,0)) rotate(var(--r0,0deg));
     }
     .note.live{ animation-play-state: running; opacity: 1; }
     .note.dragging{ cursor:grabbing; animation-play-state:paused; z-index:3000; }
-
-    /* PIN:
-       - padrão = "buraco" usando currentColor (JS define preto/branco conforme contraste)
-       - quando .pinned = alfinete vermelho
-    */
-    .pin{
-      position:absolute; top:10px; left:12px;
-      width:14px; height:14px; border-radius:50%;
-      border:2px solid currentColor;
-      background: currentColor;
-      cursor:pointer;
-      box-shadow:inset 0 0 0 3px currentColor;
-      color:#000; /* default (JS ajusta) */
-    }
-    .note.pinned .pin{
-      border:none;
-      background: radial-gradient(circle at 30% 30%, #ff7b7b 0 50%, #c84646 60% 100%);
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
-      color:inherit;
-    }
-
     .note.pinned{ animation-play-state: paused !important; z-index: 2500; }
-    .note.pinned .pin{ transform: scale(1.05); }
 
-    .note p{
-      margin:8px 0 0; line-height:1.45; font-weight:500; font-size:clamp(14px,2.2vw,16px);
-      white-space:pre-wrap; overflow-wrap:anywhere; word-break:break-word; max-height:60vh; overflow:auto
-    }
-
-    /* Toolbar dentro da folha */
     .note-toolbar{ position:absolute; top:6px; right:6px; display:flex; align-items:center; }
     .gear{ appearance:none; border:0; background:transparent; padding:0; margin:0; font-size:16px; cursor:pointer; line-height:1 }
+
+    /* MENU AJUSTES */
     .menu{
-      position:absolute; right:0; bottom:38px; display:none; flex-direction:column; gap:6px; padding:8px;
-      background:#ffffff; border:1px solid rgba(0,0,0,.1); border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.18)
+      position:absolute; right:0; bottom:38px;
+      display:none; flex-direction:column; align-items:stretch;
+      gap:6px; padding:8px;
+      background:#ffffff; border:1px solid rgba(0,0,0,.1);
+      border-radius:12px; box-shadow:0 8px 18px rgba(0,0,0,.18);
+      min-width:160px; overflow:hidden;
     }
     .menu.open{ display:flex }
-    .menu .item{ appearance:none; border:1px solid rgba(0,0,0,.08); background:#f5f6f8; padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; color:#1f2937 }
+    .menu .item{
+      display:flex; align-items:center; justify-content:center;
+      width:100%; box-sizing:border-box;
+      padding:8px 10px;
+      border:1px solid rgba(0,0,0,.08);
+      background:#f5f6f8;
+      border-radius:10px;
+      font-size:12px; font-weight:600; color:#1f2937;
+      cursor:pointer; text-align:center; white-space:nowrap;
+    }
+    .menu .item:hover{ background:#eef1ff }
 
     @keyframes float{
       0%{transform:translate(var(--x0,0),var(--y0,0)) rotate(var(--r0,-.8deg));}
       50%{transform:translate(var(--x1,8px),var(--y1,-8px)) rotate(var(--r1,.8deg));}
       100%{transform:translate(var(--x2,-6px),var(--y2,6px)) rotate(var(--r2,0deg));}
-    }
-
-    @media (max-width: 640px){
-      .composer input[type="text"]{ width:58vw }
     }
   </style>
 </head>
@@ -166,25 +147,11 @@
     }));
   }
 
-  // Define cor do "buraco" (pin não fixado) em contraste com o fundo da nota
-  function setPinColor(el){
-    const bg = window.getComputedStyle(el).backgroundColor; // "rgb(r,g,b)" ou "rgba"
-    const m = bg.match(/\d+/g);
-    if(!m) return;
-    const [r,g,b] = m.map(Number);
-    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255; // 0 escuro ~ 1 claro
-    const pinBtn = el.querySelector('.pin');
-    if(!el.classList.contains('pinned')){
-      pinBtn.style.color = (luminance > 0.5) ? "#000" : "#fff"; // fundo claro -> buraco preto; fundo escuro -> buraco branco
-    }
-  }
-
   function createNote(note){
     const data = (typeof note==='string') ? { t: note } : note;
     const el = document.createElement('article');
     el.className = 'note';
 
-    // drift aleatório controlado
     const amp = () => (Math.random() < 0.5 ? -1 : 1) * rand(2, 10);
     const rot = () => (Math.random() < 0.5 ? -1 : 1) * rand(0.2, 1.2);
     el.style.setProperty('--x0', `${amp()}px`);
@@ -199,17 +166,16 @@
     el.style.setProperty('--dur', `${rand(8, 14)}s`);
     el.style.setProperty('--delay', `${rand(0, 2)}s`);
 
-    // posição inicial consistente (evita "pulo")
     el.style.transform = 'translate(var(--x0), var(--y0)) rotate(var(--r0))';
 
     el.innerHTML = `
-      <button class="pin" title="Fixar/soltar" aria-label="Fixar ou soltar"></button>
       <p></p>
       <div class="note-toolbar">
         <button class="gear" title="Ajustes" aria-haspopup="menu">⚙️</button>
         <div class="menu" role="menu" aria-label="Ajustes">
-          <button class="item" data-target="bg" role="menuitem">Fundo</button>
-          <button class="item" data-target="fg" role="menuitem">Letra</button>
+          <button class="item item-fixar" data-action="fixar" role="menuitem">FIXAR</button>
+          <button class="item" data-target="bg" role="menuitem">FUNDO</button>
+          <button class="item" data-target="fg" role="menuitem">FONTE</button>
         </div>
         <input type="color" class="picker bgPicker" hidden>
         <input type="color" class="picker fgPicker" hidden>
@@ -226,40 +192,41 @@
     if(data.fg) el.style.color = data.fg;
     if(data.pin) el.classList.add('pinned');
 
-    const pinBtn   = el.querySelector('.pin');
     const gear     = el.querySelector('.gear');
     const menu     = el.querySelector('.menu');
+    const fixBtn   = el.querySelector('.item-fixar');
     const bgPicker = el.querySelector('.bgPicker');
     const fgPicker = el.querySelector('.fgPicker');
 
     bgPicker.value = data.bg || '#fffdfa';
     fgPicker.value = data.fg || '#1c2330';
 
+    updateFixLabel();
+
     gear.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
     document.addEventListener('click', (e)=>{ if(!el.contains(e.target)) menu.classList.remove('open'); });
 
     menu.addEventListener('click', (e)=>{
       const btn = e.target.closest('.item'); if(!btn) return;
-      if(btn.dataset.target==='bg') bgPicker.click();
-      if(btn.dataset.target==='fg') fgPicker.click();
+      const act = btn.dataset.action;
+      const tgt = btn.dataset.target;
+      if(act === 'fixar'){ toggleFix(); }
+      if(tgt === 'bg'){ bgPicker.click(); }
+      if(tgt === 'fg'){ fgPicker.click(); }
     });
 
-    bgPicker.addEventListener('input', (e)=>{
-      el.style.background = e.target.value;
-      setPinColor(el);
+    bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persist(); });
+    fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persist(); });
+
+    function toggleFix(){
+      el.classList.toggle('pinned');
+      updateFixLabel();
       persist();
-    });
-    fgPicker.addEventListener('input', (e)=>{ el.style.color = e.target.value; persist(); });
+    }
+    function updateFixLabel(){
+      fixBtn.textContent = el.classList.contains('pinned') ? 'DESFIXAR' : 'FIXAR';
+    }
 
-    pinBtn.addEventListener('click', ()=>{
-      el.classList.toggle('pinned'); // pausa/retoma animação + alterna buraco/alfinete
-      if(!el.classList.contains('pinned')){
-        setPinColor(el); // voltou a buraco: recalcula contraste
-      }
-      persist();
-    });
-
-    // Arrastar (permanece possível mesmo fixada)
     let sx=0, sy=0, ox=0, oy=0;
     function onDown(ev){
       if(ev.button!==undefined && ev.button!==0) return;
@@ -278,9 +245,6 @@
     el.addEventListener('pointerdown', onDown);
 
     el.addEventListener('dblclick', ()=>{ el.remove(); persist(); });
-
-    // define contraste inicial do "buraco"
-    setPinColor(el);
 
     return el;
   }
@@ -322,11 +286,11 @@
   });
 
   if(load().length===0) save([
-    { t:"Bem vindo ao MyMind!" },
-    { t:"“O tempo é um ladrão silencioso, que rouba tudo sem jamais devolver.”", bg:"#000000", fg:"#ffffff" },
-    { t:"“Eu não sabia o que era a fraqueza... até conhecer você.”", bg:"#000000", fg:"#ffffff" },
-    { t:"“O passado nunca desaparece, ele apenas se esconde nos cantos mais escuros da mente.”", bg:"#4B0082", fg:"#FFFF66" }
+    { t:"Bem vindo ao MyMind", bg:"#000000", fg:"#ffffff" },
+    { t:"A vida deve ser compreendida para trás. Mas deve ser vivida para frente", bg:"#ffffff", fg:"#000000" },
+    { t:"Te amo!" }
   ]);
+
   render();
   </script>
 </body>
