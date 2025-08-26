@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Frases Flutuantes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-1:#0f1226; /* fundo profundo */
+      --bg-2:#1a1f3d; /* tom secundário */
+      --acc-1:#8fd3fe; /* azul suave */
+      --acc-2:#c3f7c6; /* verde suave */
+      --paper:#fffdfa; /* cor de folha */
+      --ink:#1c2330; /* cor do texto */
+      --shadow: 0 6px 22px rgba(10,14,35,.28), 0 2px 10px rgba(10,14,35,.18);
+    }
+
+    *{ box-sizing:border-box }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:#e9ecf1;
+      background: radial-gradient(1200px 700px at 15% 10%, rgba(143,211,254,.13), transparent 60%),
+                  radial-gradient(1000px 700px at 85% 90%, rgba(195,247,198,.12), transparent 60%),
+                  linear-gradient(135deg, var(--bg-1), var(--bg-2));
+      overflow:hidden; /* as folhas flutuam dentro da viewport */
+    }
+
+    /* Cabeçalho discreto */
+    .topbar{
+      position:fixed; inset: 18px auto auto 18px; z-index: 2000;
+      display:flex; gap:12px; align-items:center;
+      backdrop-filter: blur(8px);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px; padding: 12px 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    }
+    .brand{font-weight:800; letter-spacing:.3px; font-size:14px; opacity:.9}
+    .brand b{color:var(--acc-1)}
+
+    /* Formulário de entrada */
+    .composer{ display:flex; align-items:center; gap:10px; }
+    .composer input[type="text"]{
+      width: clamp(220px, 30vw, 440px);
+      padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06); color:#eef1f7; outline:none;
+    }
+    .composer input::placeholder{ color: #c9cfda; opacity:.66 }
+    .btn{
+      appearance: none; border:0; cursor:pointer; border-radius: 12px;
+      padding: 11px 14px; font-weight:700; color:#0a0f1e;
+      background: linear-gradient(180deg, #c3f7c6, #8fd3fe);
+      box-shadow: 0 6px 16px rgba(143,211,254,.28);
+      transition: transform .12s ease, filter .2s ease;
+    }
+    .btn:hover{ transform: translateY(-1px) }
+    .btn:active{ transform: translateY(0) scale(.98) }
+    .ghost{
+      background: transparent; color:#dce3ee; border:1px solid rgba(255,255,255,.18);
+      box-shadow:none; font-weight:600;
+    }
+
+    /* Área de notas */
+    .stage{ position:relative; width:100%; height:100%; overflow:hidden; }
+
+    /* Folha de papel */
+    .note{
+      position:absolute; min-width: 180px; max-width: 340px; padding: 18px 18px 22px 18px;
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      transform-origin: 50% 50%;
+      user-select: none;
+      will-change: transform;
+      animation: float var(--dur, 10s) ease-in-out var(--delay, 0s) infinite alternate;
+      /* leve textura por gradientes */
+      background-image:
+        radial-gradient(1200px 60px at 50% 0, rgba(255,255,255,.8), rgba(255,255,255,0) 70%),
+        linear-gradient(180deg, rgba(0,0,0,.03), rgba(255,255,255,0) 30%);
+      border: 1px solid rgba(0,0,0,.04);
+    }
+
+    .note::before{ /* pino */
+      content: ""; position:absolute; top:12px; left:14px; width:10px; height:10px;
+      background: radial-gradient(circle at 30% 30%, #ff7b7b 0 50%, #c84646 60% 100%);
+      border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .note::after{ /* dobra no canto */
+      content:""; position:absolute; right:0; top:0; width:24px; height:24px;
+      background: linear-gradient(135deg, rgba(0,0,0,.12), rgba(0,0,0,0) 60%);
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+      border-top-right-radius: 18px;
+      opacity:.18;
+    }
+
+    .note p{ margin: 8px 0 0 0; line-height:1.45; font-weight:500; font-size: clamp(14px, 2.2vw, 16px); }
+    .note h4{ margin:0; font-family: "Playfair Display", serif; font-weight:700; font-size: clamp(16px, 2.3vw, 18px); }
+
+    /* ao focar/pausar */
+    .note:hover{ filter: drop-shadow(0 18px 28px rgba(10,14,35,.42)); }
+    .note.paused{ animation-play-state: paused; z-index: 1500; transform: scale(1.04) translateZ(0); }
+
+    @keyframes float{
+      0%   { transform: translate(var(--x0, 0), var(--y0, 0)) rotate(var(--r0, -2deg)); }
+      50%  { transform: translate(var(--x1, 10px), var(--y1, -10px)) rotate(var(--r1, 2deg)); }
+      100% { transform: translate(var(--x2, -6px), var(--y2, 8px)) rotate(var(--r2, 0deg)); }
+    }
+
+    /* Tooltip minimalista */
+    .tip{
+      position:fixed; bottom:18px; right:18px; z-index: 2000;
+      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+      border-radius: 14px; padding:10px 12px; font-size:12px; opacity:.85;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Responsivo */
+    @media (max-width: 640px){
+      .composer input[type="text"]{ width: 58vw }
+      .topbar{ inset: 12px auto auto 12px; padding:10px 12px }
+      .tip{ bottom:12px; right:12px }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar" role="region" aria-label="Adicionar frases">
+    <div class="brand">frases<b>.folhas</b></div>
+    <form class="composer" id="composer" autocomplete="off">
+      <input id="textInput" type="text" maxlength="220" placeholder="Escreva uma frase curta e pressione Enter…" aria-label="Escreva sua frase" />
+      <button class="btn" type="submit" title="Adicionar">Adicionar</button>
+      <button class="btn ghost" type="button" id="clearBtn" title="Limpar tudo">Limpar</button>
+    </form>
+  </div>
+
+  <div class="stage" id="stage" aria-live="polite" aria-atomic="false"></div>
+
+  <div class="tip">Dica: passe o mouse ou toque numa folha para pausar e ler.</div>
+
+  <script>
+    const stage = document.getElementById('stage');
+    const form = document.getElementById('composer');
+    const input = document.getElementById('textInput');
+    const clearBtn = document.getElementById('clearBtn');
+
+    /** Util: salva e carrega do localStorage */
+    const STORAGE_KEY = 'frases_folhas_v1';
+    const loadNotes = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const saveNotes = (arr) => localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+
+    /** Gera números aleatórios com intervalo */
+    const rand = (min, max) => Math.random() * (max - min) + min;
+
+    /** Cria elemento de nota */
+    function createNote(text, idx){
+      const el = document.createElement('article');
+      el.className = 'note';
+      el.setAttribute('role', 'note');
+      el.setAttribute('aria-label', `Folha ${idx+1}`);
+      el.innerHTML = `<h4>✦</h4><p></p>`;
+      el.querySelector('p').textContent = text;
+
+      // posição inicial aleatória dentro da viewport
+      const vw = window.innerWidth; const vh = window.innerHeight;
+      const x = rand(40, vw - 360); // margem de borda
+      const y = rand(40, vh - 220);
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+
+      // parâmetros aleatórios de animação
+      el.style.setProperty('--dur', `${rand(9, 15)}s`);
+      el.style.setProperty('--delay', `${rand(-4, 4)}s`);
+      el.style.setProperty('--x0', `${rand(-6, 6)}px`);
+      el.style.setProperty('--y0', `${rand(-8, 8)}px`);
+      el.style.setProperty('--x1', `${rand(-16, 16)}px`);
+      el.style.setProperty('--y1', `${rand(-14, 14)}px`);
+      el.style.setProperty('--x2', `${rand(-16, 16)}px`);
+      el.style.setProperty('--y2', `${rand(-12, 12)}px`);
+      el.style.setProperty('--r0', `${rand(-3, 3)}deg`);
+      el.style.setProperty('--r1', `${rand(-2, 2)}deg`);
+      el.style.setProperty('--r2', `${rand(-1, 1)}deg`);
+
+      // pausar/retomar ao hover ou toque
+      let touchTimeout;
+      const togglePause = (pause=true)=> el.classList.toggle('paused', pause);
+      el.addEventListener('mouseenter', ()=>togglePause(true));
+      el.addEventListener('mouseleave', ()=>togglePause(false));
+      el.addEventListener('touchstart', ()=>{ togglePause(true); clearTimeout(touchTimeout); touchTimeout = setTimeout(()=>togglePause(false), 2000); }, {passive:true});
+
+      // duplo clique para remover apenas essa nota
+      el.addEventListener('dblclick', ()=>{
+        el.remove();
+        const left = Array.from(document.querySelectorAll('.note')).map(n=>n.querySelector('p').textContent);
+        saveNotes(left);
+      });
+
+      stage.appendChild(el);
+      return el;
+    }
+
+    /** Render inicial */
+    function render(){
+      stage.innerHTML = '';
+      const notes = loadNotes();
+      notes.forEach((t, i)=>createNote(t, i));
+    }
+
+    /** Submissão do formulário */
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const text = (input.value || '').trim();
+      if(!text) return;
+      const notes = loadNotes();
+      notes.push(text);
+      saveNotes(notes);
+      createNote(text, notes.length - 1);
+      input.value = '';
+      input.focus();
+    });
+
+    /** Limpar tudo */
+    clearBtn.addEventListener('click', ()=>{
+      if(confirm('Tem certeza que deseja limpar todas as folhas?')){
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+      }
+    });
+
+    /** Ajusta posições ao redimensionar (opcional: re-render para manter bons limites) */
+    window.addEventListener('resize', ()=>{
+      // Reposiciona suavemente
+      const notes = document.querySelectorAll('.note');
+      notes.forEach(n=>{
+        const vw = window.innerWidth; const vh = window.innerHeight;
+        const x = rand(40, Math.max(44, vw - 360));
+        const y = rand(40, Math.max(44, vh - 220));
+        n.style.left = `${x}px`; n.style.top = `${y}px`;
+      });
+    });
+
+    // Pré-popula com exemplos se vazio
+    if(loadNotes().length === 0){
+      saveNotes([
+        'A simplicidade é o último grau de sofisticação.',
+        'Respire. O agora já é bonito o suficiente.',
+        'Pequenos passos constroem grandes caminhos.'
+      ]);
+    }
+
+    render();
+  </script>
+</body>
+</html>
