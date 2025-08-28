@@ -117,28 +117,37 @@
 
   <div class="stage" id="stage"></div>
 
-  <script>
+  <script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+  // 🔹 Cole aqui os dados do seu Supabase
+  const SUPABASE_URL  = "https://rfygkxjvzlsqdudydydf.supabase.co"; // Project URL
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmeWdreGp2emxzcWR1ZHlkeWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMzk0NzksImV4cCI6MjA3MTkxNTQ3OX0.OdyKdmbEUHDcBtUzXqzz2inDAeQN2Sd9RiZGgkXKcCk";           // anon public key
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ====== SELETORES ORIGINAIS ======
   const stage = document.getElementById('stage');
   const form  = document.getElementById('composer');
   const input = document.getElementById('textInput');
   const addTrigger = document.getElementById('addTrigger');
 
-  const STORAGE_KEY = 'mymind_notes';
+  // ====== ESTADO LOCAL (apenas posição/cor/fixar) ======
+  const STATE_KEY = 'mymind_state';
   const rand = (a,b)=>Math.random()*(b-a)+a;
   const clamp = (v,a,b)=>Math.min(Math.max(v,a),b);
-  const load = ()=>{ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch{ return []; } };
-  const save = (arr)=>localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  const loadState = ()=>{ try{ return JSON.parse(localStorage.getItem(STATE_KEY)||'{}'); }catch{ return {}; } };
+  const saveState = (obj)=>localStorage.setItem(STATE_KEY, JSON.stringify(obj));
+  const state = loadState(); // { "<texto>": {x,y,bg,fg,pin} }
 
-  function persist(){
-    const arr = [...document.querySelectorAll('.note')].map(n=>({
-      t: n.querySelector('p').textContent,
-      x: parseFloat(n.style.left) || 0,
-      y: parseFloat(n.style.top) || 0,
-      bg: n.style.background || undefined,
-      fg: n.style.color || undefined,
-      pin: n.classList.contains('pinned') || undefined
-    }));
-    save(arr);
+  function persistCard(el, text){
+    state[text] = {
+      x: parseFloat(el.style.left)||0,
+      y: parseFloat(el.style.top)||0,
+      bg: el.style.background || undefined,
+      fg: el.style.color || undefined,
+      pin: el.classList.contains('pinned') || undefined
+    };
+    saveState(state);
   }
 
   function startLive(el, i=0){
@@ -147,8 +156,8 @@
     }));
   }
 
-  function createNote(note){
-    const data = (typeof note==='string') ? { t: note } : note;
+  function createNote(text){
+    const s = state[text] || {};
     const el = document.createElement('article');
     el.className = 'note';
 
@@ -181,16 +190,16 @@
         <input type="color" class="picker fgPicker" hidden>
       </div>`;
 
-    el.querySelector('p').textContent = data.t || '';
+    el.querySelector('p').textContent = text;
 
-    const initX = (typeof data.x==='number') ? data.x : rand(40, Math.max(44, window.innerWidth  - 360));
-    const initY = (typeof data.y==='number') ? data.y : rand(40, Math.max(44, window.innerHeight - 220));
+    const initX = (typeof s.x==='number') ? s.x : rand(40, Math.max(44, window.innerWidth  - 360));
+    const initY = (typeof s.y==='number') ? s.y : rand(40, Math.max(44, window.innerHeight - 220));
     el.style.left = initX + 'px';
     el.style.top  = initY + 'px';
 
-    if(data.bg) el.style.background = data.bg;
-    if(data.fg) el.style.color = data.fg;
-    if(data.pin) el.classList.add('pinned');
+    if(s.bg) el.style.background = s.bg;
+    if(s.fg) el.style.color      = s.fg;
+    if(s.pin) el.classList.add('pinned');
 
     const gear     = el.querySelector('.gear');
     const menu     = el.querySelector('.menu');
@@ -198,9 +207,17 @@
     const bgPicker = el.querySelector('.bgPicker');
     const fgPicker = el.querySelector('.fgPicker');
 
-    bgPicker.value = data.bg || '#fffdfa';
-    fgPicker.value = data.fg || '#1c2330';
+    bgPicker.value = s.bg || '#fffdfa';
+    fgPicker.value = s.fg || '#1c2330';
 
+    function updateFixLabel(){
+      fixBtn.textContent = el.classList.contains('pinned') ? 'DESFIXAR' : 'FIXAR';
+    }
+    function toggleFix(){
+      el.classList.toggle('pinned');
+      updateFixLabel();
+      persistCard(el, text);
+    }
     updateFixLabel();
 
     gear.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('open'); });
@@ -215,17 +232,8 @@
       if(tgt === 'fg'){ fgPicker.click(); }
     });
 
-    bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persist(); });
-    fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persist(); });
-
-    function toggleFix(){
-      el.classList.toggle('pinned');
-      updateFixLabel();
-      persist();
-    }
-    function updateFixLabel(){
-      fixBtn.textContent = el.classList.contains('pinned') ? 'DESFIXAR' : 'FIXAR';
-    }
+    bgPicker.addEventListener('input', (e)=>{ el.style.background = e.target.value; persistCard(el, text); });
+    fgPicker.addEventListener('input', (e)=>{ el.style.color      = e.target.value; persistCard(el, text); });
 
     let sx=0, sy=0, ox=0, oy=0;
     function onDown(ev){
@@ -241,59 +249,75 @@
       const ny = clamp(oy + dy, 0, window.innerHeight - el.offsetHeight);
       el.style.left = nx + 'px'; el.style.top  = ny + 'px';
     }
-    function onUp(){ el.classList.remove('dragging'); window.removeEventListener('pointermove', onMove); persist(); }
+    function onUp(){ el.classList.remove('dragging'); window.removeEventListener('pointermove', onMove); persistCard(el, text); }
     el.addEventListener('pointerdown', onDown);
 
-    el.addEventListener('dblclick', ()=>{ el.remove(); persist(); });
+    el.addEventListener('dblclick', ()=>{ el.remove(); persistCard(el, text); });
 
     return el;
   }
 
-  function render(){
+  // ====== SUPABASE: CARREGAR ======
+  async function fetchMessages(){
+    const { data, error } = await supabase
+      .from('messages')
+      .select('messages, created_at')
+      .order('created_at', { ascending:false })
+      .limit(200);
+    if(error){ console.error(error); return []; }
+    return data || [];
+  }
+
+  async function render(){
     stage.innerHTML='';
-    const notes = load();
+    const rows = await fetchMessages();
     const frag = document.createDocumentFragment();
-    const elements = notes.map(createNote);
+    const elements = rows.map(r => createNote(r.messages));
     elements.forEach(el => frag.appendChild(el));
     stage.appendChild(frag);
     elements.forEach((el, i)=> startLive(el, i));
   }
 
+  // ====== UI: ABRIR COMPOSER ======
   addTrigger.addEventListener('click', ()=>{
     form.classList.add('active');
     input.value = '';
     input.focus();
   });
 
-  form.addEventListener('submit', (e)=>{
+  // ====== SUPABASE: ENVIAR ======
+  form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const t = input.value.trim(); if(!t) return;
-    const arr = load(); arr.push({ t }); save(arr);
-    const el = createNote({ t });
-    stage.appendChild(el);
-    startLive(el);
+    const messages = input.value.trim(); if(!messages) return;
+    const { error } = await supabase.from('messages').insert({ messages });
+    if(error){ alert('Erro ao enviar'); console.error(error); return; }
     input.value='';
     form.classList.remove('active');
+    // não renderiza tudo de novo — o Realtime abaixo insere a nova nota
   });
 
+  // ====== SUPABASE: REALTIME ======
+  supabase.channel('realtime:messages')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'messages' }, (payload)=>{
+      const text = payload.new.messages;
+      const el = createNote(text);
+      stage.prepend(el);
+      startLive(el, 0);
+    })
+    .subscribe();
+
+  // ====== PRIMEIRA RENDERIZAÇÃO ======
+  render();
+
+  // ====== AJUSTE AO REDIMENSIONAR ======
   window.addEventListener('resize', ()=>{
     document.querySelectorAll('.note').forEach(n=>{
       const nx = Math.min(parseFloat(n.style.left)||0, Math.max(0, window.innerWidth  - n.offsetWidth));
       const ny = Math.min(parseFloat(n.style.top) ||0, Math.max(0, window.innerHeight - n.offsetHeight));
       n.style.left = nx + 'px'; n.style.top = ny + 'px';
     });
-    persist();
+    saveState(state);
   });
-
-  if(load().length===0) save([
-    { t:"Bem vindo ao MyMind!" },
-    { t:"“O tempo é um ladrão silencioso, que rouba tudo sem jamais devolver.”", bg:"#000000", fg:"#ffffff" },
-    { t:"“Eu não sabia o que era a fraqueza... até conhecer você.”", bg:"#000000", fg:"#ffffff" },
-    { t:"“O passado nunca desaparece, ele apenas se esconde nos cantos mais escuros da mente.”", bg:"#4B0082", fg:"#FFFF66" }
-  ]);
-
-  render();
   </script>
 </body>
 </html>
-
